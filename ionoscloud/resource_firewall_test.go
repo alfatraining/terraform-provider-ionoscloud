@@ -3,8 +3,9 @@ package ionoscloud
 import (
 	"context"
 	"fmt"
-	ionoscloud "github.com/ionos-cloud/sdk-go/v6"
 	"testing"
+
+	ionoscloud "github.com/ionos-cloud/sdk-go/v6"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -22,18 +23,23 @@ func TestAccFirewall_Basic(t *testing.T) {
 		CheckDestroy:      testAccCheckFirewallDestroyCheck,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testacccheckfirewallconfigBasic, firewallName),
+				Config: fmt.Sprintf(testacccheckfirewallconfigBasic, firewallName, firewallName),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckFirewallExists("ionoscloud_firewall.webserver_http", &firewall),
+					testAccCheckFirewallExists("ionoscloud_firewall.webserver_icmp", &firewall),
 					testAccCheckFirewallAttributes("ionoscloud_firewall.webserver_http", firewallName),
+					testAccCheckFirewallAttributes("ionoscloud_firewall.webserver_icmp", firewallName),
 					resource.TestCheckResourceAttr("ionoscloud_firewall.webserver_http", "name", firewallName),
+					resource.TestCheckResourceAttr("ionoscloud_firewall.webserver_icmp", "name", firewallName),
 				),
 			},
 			{
 				Config: testacccheckfirewallconfigUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckFirewallAttributes("ionoscloud_firewall.webserver_http", "updated"),
+					testAccCheckFirewallAttributes("ionoscloud_firewall.webserver_icmp", "updated"),
 					resource.TestCheckResourceAttr("ionoscloud_firewall.webserver_http", "name", "updated"),
+					resource.TestCheckResourceAttr("ionoscloud_firewall.webserver_icmp", "name", "updated"),
 				),
 			},
 		},
@@ -170,6 +176,15 @@ resource "ionoscloud_firewall" "webserver_http" {
   port_range_start = 80
   port_range_end = 80
 }
+
+resource "ionoscloud_firewall" "webserver_icmp" {
+  datacenter_id = "${ionoscloud_datacenter.foobar.id}"
+  server_id = "${ionoscloud_server.webserver.id}"
+  nic_id = "${ionoscloud_nic.database_nic.id}"
+  protocol = "ICMP"
+  name = "%s"
+  icmp_type = 0
+}
 `
 
 const testacccheckfirewallconfigUpdate = `
@@ -222,5 +237,14 @@ resource "ionoscloud_firewall" "webserver_http" {
   name = "updated"
   port_range_start = 80
   port_range_end = 80
+}
+
+resource "ionoscloud_firewall" "webserver_icmp" {
+  datacenter_id = "${ionoscloud_datacenter.foobar.id}"
+  server_id = "${ionoscloud_server.webserver.id}"
+  nic_id = "${ionoscloud_nic.database_nic.id}"
+  protocol = "ICMP"
+  name = "updated"
+  icmp_type = 0
 }
 `
