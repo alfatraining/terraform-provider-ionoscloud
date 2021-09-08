@@ -18,11 +18,16 @@ func TestAccFirewall_ImportBasic(t *testing.T) {
 		CheckDestroy:      testAccCheckFirewallDestroyCheck,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testacccheckfirewallconfigBasic, firewallName),
+				Config: fmt.Sprintf(testacccheckfirewallconfigBasic, firewallName, firewallName),
 			},
-
 			{
 				ResourceName:      "ionoscloud_firewall.webserver_http",
+				ImportStateIdFunc: testAccFirewallImportStateId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				ResourceName:      "ionoscloud_firewall.webserver_icmp",
 				ImportStateIdFunc: testAccFirewallImportStateId,
 				ImportState:       true,
 				ImportStateVerify: true,

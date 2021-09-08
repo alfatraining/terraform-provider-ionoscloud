@@ -3,11 +3,11 @@ package ionoscloud
 import (
 	"context"
 	"fmt"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	ionoscloud "github.com/ionos-cloud/sdk-go/v6"
-	"strconv"
 )
 
 func resourceFirewall() *schema.Resource {
@@ -64,12 +64,24 @@ func resourceFirewall() *schema.Resource {
 				},
 			},
 			"icmp_type": {
-				Type:     schema.TypeString,
+				Type:     schema.TypeInt,
 				Optional: true,
+				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
+					if v.(int) < 0 && v.(int) > 254 {
+						errors = append(errors, fmt.Errorf("icmp type must be between 0 and 254"))
+					}
+					return
+				},
 			},
 			"icmp_code": {
-				Type:     schema.TypeString,
+				Type:     schema.TypeInt,
 				Optional: true,
+				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
+					if v.(int) < 0 && v.(int) > 254 {
+						errors = append(errors, fmt.Errorf("icmp codes must be between 0 and 254"))
+					}
+					return
+				},
 			},
 			"type": {
 				Type:     schema.TypeString,
@@ -134,23 +146,14 @@ func resourceFirewallCreate(ctx context.Context, d *schema.ResourceData, meta in
 		tempPortRangeEnd := int32(d.Get("port_range_end").(int))
 		fw.Properties.PortRangeEnd = &tempPortRangeEnd
 	}
-	if _, ok := d.GetOk("icmp_type"); ok {
-		tempIcmpType, err := strconv.Atoi(d.Get("icmp_type").(string))
-		if err != nil {
-			diags := diag.FromErr(fmt.Errorf("an error occured while creating a firewall rule: %s", err))
-			return diags
-		}
-		tempIcmpTypeInt := int32(tempIcmpType)
-		fw.Properties.IcmpType = &tempIcmpTypeInt
+	// These can be 0 therefore we need to use GetOkExists
+	if _, ok := d.GetOkExists("icmp_type"); ok {
+		tempIcmpType := int32(d.Get("icmp_type").(int))
+		fw.Properties.IcmpType = &tempIcmpType
 	}
-	if _, ok := d.GetOk("icmp_code"); ok {
-		tempIcmpCodee, err := strconv.Atoi(d.Get("icmp_code").(string))
-		if err != nil {
-			diags := diag.FromErr(fmt.Errorf("an error occured while creating a firewall rule: %s", err))
-			return diags
-		}
-		tempIcmpCodeeInt := int32(tempIcmpCodee)
-		fw.Properties.IcmpCode = &tempIcmpCodeeInt
+	if _, ok := d.GetOkExists("icmp_code"); ok {
+		tempIcmpCode := int32(d.Get("icmp_code").(int))
+		fw.Properties.IcmpCode = &tempIcmpCode
 	}
 	if _, ok := d.GetOk("type"); ok {
 		fwType := d.Get("type").(string)
@@ -321,23 +324,13 @@ func resourceFirewallUpdate(ctx context.Context, d *schema.ResourceData, meta in
 	}
 	if d.HasChange("icmp_type") {
 		_, v := d.GetChange("icmp_type")
-		tempIcmpType, err := strconv.Atoi(v.(string))
-		if err != nil {
-			diags := diag.FromErr(fmt.Errorf("an error occured while updating a firewall rule: %s", err))
-			return diags
-		}
-		tempIcmpTypeInt := int32(tempIcmpType)
-		properties.IcmpType = &tempIcmpTypeInt
+		vInt := int32(*(v.(*int)))
+		properties.IcmpType = &vInt
 	}
 	if d.HasChange("icmp_code") {
 		_, v := d.GetChange("icmp_code")
-		tempIcmpCode, err := strconv.Atoi(v.(string))
-		if err != nil {
-			diags := diag.FromErr(fmt.Errorf("an error occured while updating a firewall rule: %s", err))
-			return diags
-		}
-		tempIcmpCodeInt := int32(tempIcmpCode)
-		properties.IcmpCode = &tempIcmpCodeInt
+		vInt := int32(*(v.(*int)))
+		properties.IcmpCode = &vInt
 	}
 
 	if d.HasChange("type") {
